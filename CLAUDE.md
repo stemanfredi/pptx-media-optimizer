@@ -16,19 +16,14 @@ Optimize PowerPoint files by compressing images, transcoding videos, and removin
 ┌─────────────────────────────────────────────────────────────┐
 │                    Google Colab Notebook                    │
 ├─────────────────────────────────────────────────────────────┤
-│  Cell 1: Setup     │ Install deps, detect GPU, setup FFmpeg │
+│  Cell 1: Setup         │ Install deps, detect GPU, define  │
+│                        │ all functions and classes          │
 ├─────────────────────────────────────────────────────────────┤
-│  Cell 2: Core      │ PPTX extract/repackage utilities       │
+│  Cell 2: Upload &      │ File upload, extract PPTX, scan   │
+│          Analyze       │ media, detect unused/orphan       │
 ├─────────────────────────────────────────────────────────────┤
-│  Cell 3: Analysis  │ Scan media, detect unused, report      │
-├─────────────────────────────────────────────────────────────┤
-│  Cell 4: Image     │ Pillow-based resize/compress           │
-├─────────────────────────────────────────────────────────────┤
-│  Cell 5: Video     │ FFmpeg transcode (NVENC/libx264)       │
-├─────────────────────────────────────────────────────────────┤
-│  Cell 6: Cleanup   │ Remove unreferenced media files        │
-├─────────────────────────────────────────────────────────────┤
-│  Cell 7: Main      │ UI forms, orchestration, output        │
+│  Cell 3: Optimize &    │ Apply optimizations, repackage,   │
+│          Download      │ download result                   │
 └─────────────────────────────────────────────────────────────┘
 ```
 
@@ -62,70 +57,91 @@ Rules: subject ≤50 chars, lowercase, no period, imperative mood
 
 ### Environment
 - **Platform**: Google Colab (Linux)
-- **Dependencies**: `python-pptx`, `Pillow`, FFmpeg
-- **GPU**: NVIDIA T4/A100 (NVENC), fallback to CPU (libx264)
+- **Dependencies**: `Pillow`, `pngquant`, FFmpeg
+- **GPU**: NVIDIA T4/A100 (NVENC H.264/H.265), fallback to CPU (libx264/libx265)
 
 ### PPTX Handling
 - Treat `.pptx` as ZIP archive
 - Extract to temp directory, process, repackage
 - **Never overwrite source file** - always output to new file
 - Preserve XML structure and relationships
+- Update `[Content_Types].xml` with correct MIME types when changing extensions
 
 ### Image Optimization
 | Format | Action | Notes |
 |--------|--------|-------|
-| JPEG | Compress | Quality slider 10-100 |
-| PNG | Compress | Preserve RGBA transparency |
+| JPEG | Compress | Quality slider 30-95, default 65 |
+| PNG | Compress | pngquant quality 40-95, default 70 |
 | EMF/WMF | Skip | Vector formats, not processable |
 | SVG | Skip | Vector format |
 | GIF | Skip | Animation preservation complex |
 
-- Downscale if width > max_width (default: 1920px)
-- Preserve original file extensions (critical for XML refs)
+- Downscale if width > max_width (default: 1600px)
+- pngquant for PNG compression (better quality than Pillow quantize)
 - Skip already-small images (< threshold)
 
 ### Video Optimization
 | Input | Output | Codec |
 |-------|--------|-------|
-| Any video | MP4 | H.264 (AVC) + AAC |
+| Any video | MP4 | H.264 or H.265 + AAC |
 
 - **H.264/AAC in MP4**: Maximum PowerPoint compatibility (2013+)
-- GPU: `h264_nvenc` with `-preset fast`
-- CPU fallback: `libx264` with `-preset medium -crf 23`
+- **H.265/AAC in MP4**: Smaller files, PowerPoint 2019+/Windows 10+ only
+- GPU: `h264_nvenc`/`hevc_nvenc` with `-preset fast`
+- CPU fallback: `libx264`/`libx265` with `-preset fast`
+- CRF-based quality control (default: 26)
+- Max video height scaling (720/1080/1440/2160, default: 1080)
 - Preserve aspect ratio
-- Audio: AAC 128kbps (or copy if already AAC)
+- Audio: AAC 96kbps
+- Update XML references when extension changes (.wmv → .mp4)
 
 ### Audio Optimization
 - Same FFmpeg pipeline as video
 - Output: AAC in M4A container
-- Bitrate: 128kbps default
+- Bitrate: 96kbps
+- Update XML references when extension changes (.wav → .m4a)
 
 ### Unused Media Detection
 Parse relationship files to find referenced media:
 - `ppt/slides/_rels/*.xml.rels`
 - `ppt/slideLayouts/_rels/*.xml.rels`
 - `ppt/slideMasters/_rels/*.xml.rels`
-- `ppt/notesSlides/_rels/*.xml.rels` (if exists)
+- `ppt/notesSlides/_rels/*.xml.rels`
 
 Compare against `ppt/media/` contents. Unreferenced files are candidates for deletion.
 
+### Orphan Master/Layout Detection
+- Trace Slide → Layout → Master chain to find active templates
+- Detect layouts/masters not used by any slide
+- Identify media only referenced by orphan templates
+
 ### Workflow
-1. **Upload**: File upload widget (simple, no Drive mount)
-2. **Extract**: Unzip PPTX to temp workspace
-3. **Analyze**: Scan all media, detect unused, calculate potential savings
-4. **Present**: Show analysis with per-item toggle options
-5. **Execute**: Process only selected optimizations
-6. **Repackage**: Create new valid PPTX
-7. **Report**: Size comparison (original vs optimized)
-8. **Download**: Provide download link
+1. **Setup**: Install dependencies, detect GPU
+2. **Upload & Analyze**: Upload file, extract, scan media, show report
+3. **Optimize & Download**: Apply selected optimizations, repackage, download
 
 ### UI Parameters (Colab Forms)
 ```python
-input_file       # File upload widget
-image_quality    # Slider 10-100, default 85
-max_image_width  # Integer, default 1920
-video_bitrate    # String, default "2M"
-enable_gpu       # Boolean, default True (auto-detect)
+# Slide Selection
+slides = "all"           # "all", "1,3,5", "1-10", "2-5,8,10-12"
+
+# Image Settings
+jpeg_quality = 65        # Slider 30-95
+png_quality = 70         # Slider 40-95
+max_image_width = 1600   # Integer
+
+# Video Settings
+video_codec = "h264"     # "h264" or "h265"
+video_crf = 26           # Slider 18-36 (lower = better quality)
+max_video_height = 1080  # 720, 1080, 1440, 2160
+
+# What to optimize
+remove_unused = True
+remove_orphan_media = True
+optimize_images = True
+optimize_videos = True
+optimize_audio = True
+include_templates = True
 ```
 
 ### Error Handling
@@ -155,3 +171,12 @@ enable_gpu       # Boolean, default True (auto-detect)
 - [x] Research PPTX video codec compatibility (H.264/AAC in MP4)
 - [x] Research Colab GPU/FFmpeg setup (NVENC detection, libx264 fallback)
 - [x] Implement notebook with analysis-first workflow
+- [x] Add pngquant for high-quality PNG compression
+- [x] Streamline to 3-cell workflow (Setup, Analyze, Optimize)
+- [x] Add slide selection feature (range parsing)
+- [x] Add orphan master/layout detection
+- [x] Add H.265 codec option with compatibility warning
+- [x] Add CRF-based quality control
+- [x] Add max video height scaling
+- [x] Fix Content-Type updates when changing extensions
+- [x] Add notesSlides media reference parsing
