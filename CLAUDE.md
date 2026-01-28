@@ -57,7 +57,7 @@ Rules: subject ≤50 chars, lowercase, no period, imperative mood
 
 ### Environment
 - **Platform**: Google Colab (Linux)
-- **Dependencies**: `Pillow`, `pngquant`, FFmpeg
+- **Dependencies**: `Pillow`, `python-pptx`, `pngquant`, FFmpeg
 - **GPU**: NVIDIA T4/A100 (NVENC H.264/H.265), fallback to CPU (libx264/libx265)
 
 ### PPTX Handling
@@ -137,13 +137,14 @@ max_video_height = 1080  # 720, 1080, 1440, 2160
 
 # Cleanup
 delete_unreferenced_files = True  # Files not referenced anywhere
+delete_unused_templates = True    # Remove orphan masters/layouts via python-pptx
 
 # What to optimize
 optimize_images = True
 optimize_videos = True
 optimize_audio = True
 optimize_template_images = True   # Media in active masters/layouts
-optimize_orphan_media = True      # Media in unused masters/layouts (compressed, not deleted)
+optimize_orphan_media = True      # Media in unused masters/layouts (optimized before deletion)
 ```
 
 ### Error Handling
@@ -184,3 +185,4 @@ optimize_orphan_media = True      # Media in unused masters/layouts (compressed,
 - [x] Add notesSlides media reference parsing
 - [x] Fix XML cleanup when removing unreferenced media
 - [x] Add orphan template media optimization (compress without deleting)
+- [x] Add proper orphan template deletion via python-pptx drop_rel()
