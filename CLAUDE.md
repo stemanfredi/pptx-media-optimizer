@@ -135,13 +135,15 @@ video_codec = "h264"     # "h264" or "h265"
 video_crf = 26           # Slider 18-36 (lower = better quality)
 max_video_height = 1080  # 720, 1080, 1440, 2160
 
+# Cleanup
+delete_unreferenced_files = True  # Files not referenced anywhere
+
 # What to optimize
-remove_unused = True
-remove_orphan_media = True
 optimize_images = True
 optimize_videos = True
 optimize_audio = True
-include_templates = True
+optimize_template_images = True   # Media in active masters/layouts
+optimize_orphan_media = True      # Media in unused masters/layouts (compressed, not deleted)
 ```
 
 ### Error Handling
@@ -180,3 +182,5 @@ include_templates = True
 - [x] Add max video height scaling
 - [x] Fix Content-Type updates when changing extensions
 - [x] Add notesSlides media reference parsing
+- [x] Fix XML cleanup when removing unreferenced media
+- [x] Add orphan template media optimization (compress without deleting)
