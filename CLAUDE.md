@@ -91,6 +91,7 @@ Rules: subject ≤50 chars, lowercase, no period, imperative mood
 - CPU fallback: `libx264`/`libx265` with `-preset fast`
 - CRF-based quality control (default: 26)
 - Max video height scaling (720/1080/1440/2160, default: 1080)
+- **Letterbox crop**: Auto-detect black bars via `cropdetect`, remove if >2% of frame
 - Preserve aspect ratio
 - Audio: AAC 96kbps
 - Update XML references when extension changes (.wmv → .mp4)
@@ -125,6 +126,11 @@ Compare against `ppt/media/` contents. Unreferenced files are candidates for del
 # Slide Selection
 slides = "all"           # "all", "1,3,5", "1-10", "2-5,8,10-12"
 
+# What to Optimize
+optimize_images = True   # Compress images (default: True)
+optimize_videos = True   # Transcode videos (default: True)
+optimize_audio = True    # Transcode audio (default: True)
+
 # Image Settings
 jpeg_quality = 65        # Slider 30-95
 png_quality = 70         # Slider 40-95
@@ -134,17 +140,10 @@ max_image_width = 1600   # Integer
 video_codec = "h264"     # "h264" or "h265"
 video_crf = 26           # Slider 18-36 (lower = better quality)
 max_video_height = 1080  # 720, 1080, 1440, 2160
+crop_letterbox = True    # Auto-detect and remove black bars (default: True)
 
 # Cleanup
-delete_unreferenced_files = True  # Files not referenced anywhere
-delete_unused_templates = True    # Remove orphan masters/layouts via python-pptx
-
-# What to optimize
-optimize_images = True
-optimize_videos = True
-optimize_audio = True
-optimize_template_images = True   # Media in active masters/layouts
-optimize_orphan_media = True      # Media in unused masters/layouts (optimized before deletion)
+delete_unused_templates = False   # Remove orphan masters/layouts (default: False)
 ```
 
 ### Error Handling
@@ -163,7 +162,6 @@ optimize_orphan_media = True      # Media in unused masters/layouts (optimized b
 
 ### Backlog
 
-- [ ] Banner crop feature for letterboxed videos (v2)
 - [ ] Batch processing multiple PPTX files
 - [ ] Custom FFmpeg parameters
 
@@ -186,3 +184,7 @@ optimize_orphan_media = True      # Media in unused masters/layouts (optimized b
 - [x] Fix XML cleanup when removing unreferenced media
 - [x] Add orphan template media optimization (compress without deleting)
 - [x] Add proper orphan template deletion via python-pptx drop_rel()
+- [x] Fix function/variable name collision (clean_unused_templates)
+- [x] Add collapsed code cells by default (cellView: form)
+- [x] Add letterbox crop feature (cropdetect, auto-remove black bars)
+- [x] Add processing toggles (optimize_images/videos/audio)
