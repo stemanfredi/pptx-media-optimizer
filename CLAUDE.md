@@ -78,7 +78,6 @@ Rules: subject ≤50 chars, lowercase, no period, imperative mood
 
 - Downscale if width > max_width (default: 1600px)
 - pngquant for PNG compression (better quality than Pillow quantize)
-- Skip already-small images (< threshold)
 
 ### Video Optimization
 | Input | Output | Codec |
@@ -162,6 +161,7 @@ delete_unused_templates = False   # Remove orphan masters/layouts (default: Fals
 
 ### Backlog
 
+- [ ] Skip already-small images (< size threshold)
 - [ ] Batch processing multiple PPTX files
 - [ ] Custom FFmpeg parameters
 
